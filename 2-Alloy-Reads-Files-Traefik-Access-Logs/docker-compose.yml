@@ -1,0 +1,169 @@
+---
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+      - CF_API_EMAIL=${CF_API_EMAIL}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Dashboard - REMOVE THIS IN PRODUCTION
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./traefik/access-logs:/opt/access-logs"
+      - "./traefik/traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./traefik/acme.json:/letsencrypt/acme.json"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.traefik.tls.domains[0].sans=*.${DOMAIN}"
+      - "traefik.http.routers.traefik.tls.domains[1].main=${SUBDOMAIN}"
+      - "traefik.http.routers.traefik.tls.domains[1].sans=*.${SUBDOMAIN}"
+    networks:
+      br1.232:
+        ipv4_address: 10.236.232.139
+
+
+  whoami1:
+    image: traefik/whoami
+    container_name: whoami1
+    env_file:
+      - .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.whoami1.loadbalancer.server.port=80"
+      - "traefik.http.routers.whoami1.rule=Host(`whoami1.${DOMAIN}`) || Host(`whoami1.${SUBDOMAIN}`)"
+      - "traefik.http.routers.whoami1.entrypoints=websecure"
+      - "traefik.http.routers.whoami1.tls=true"
+      - "traefik.http.routers.whoami1.tls.certresolver=cloudflare"
+      - "traefik.http.routers.whoami1.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.whoami1.tls.domains[0].sans=*.${DOMAIN}"
+      - "traefik.http.routers.whoami1.tls.domains[1].main=${SUBDOMAIN}"
+      - "traefik.http.routers.whoami1.tls.domains[1].sans=*.${SUBDOMAIN}"
+    networks:
+      br1.232:
+        ipv4_address: 10.236.232.142
+
+
+  whoami2:
+    image: traefik/whoami
+    container_name: whoami2
+    env_file:
+      - .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami2.rule=Host(`whoami2.${DOMAIN}`) || Host(`whoami2.${SUBDOMAIN}`)"
+      - "traefik.http.routers.whoami2.entrypoints=websecure"
+      - "traefik.http.routers.whoami2.tls=true"
+      - "traefik.http.routers.whoami2.tls.certresolver=cloudflare"
+      - "traefik.http.services.whoami2.loadbalancer.server.port=80"
+      - "traefik.http.routers.whoami2.tls.domains[0].sans=*.${DOMAIN}"
+      - "traefik.http.routers.whoami2.tls.domains[1].sans=*.${SUBDOMAIN}"
+    networks:
+      br1.232:
+        ipv4_address: 10.236.232.143
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "12345:12345"
+    volumes:
+      - "./alloy:/etc/alloy"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
+      - "./traefik/access-logs:/var/log:ro"
+      - "./alloy/GeoLite2-City.mmdb:/etc/alloy/GeoLite2-City.mmdb:ro"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/etc/alloy/data
+      - /etc/alloy/config.alloy
+    depends_on:
+      - loki
+    networks:
+      br1.232:
+        ipv4_address: 10.236.232.148
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.alloy.rule=Host(`alloy.${DOMAIN}`) || Host(`alloy.${SUBDOMAIN}`)"
+      - "traefik.http.routers.alloy.entrypoints=websecure"
+      - "traefik.http.routers.alloy.tls=true"
+      - "traefik.http.routers.alloy.tls.certresolver=cloudflare"
+      - "traefik.http.services.alloy.loadbalancer.server.port=12345"
+      - "traefik.http.routers.alloy.tls.domains[0].sans=*.${DOMAIN}"
+      - "traefik.http.routers.alloy.tls.domains[1].sans=*.${SUBDOMAIN}"
+
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    env_file:
+      - .env
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - "./loki/data:/loki"
+      - "./loki/config:/etc/loki"
+    networks:
+      br1.232:
+        ipv4_address: 10.236.232.146
+
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SERVER_ROOT_URL=https://grafana.${DOMAIN}
+      - GF_SERVER_DOMAIN=grafana.${DOMAIN}
+    volumes:
+      - "./grafana/provisioning/:/etc/grafana/provisioning"
+      - 'grafana_data:/var/lib/grafana'
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        /run.sh
+    networks:
+      br1.232:
+        ipv4_address: 10.236.232.147
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`) || Host(`grafana.${SUBDOMAIN}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=cloudflare"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "traefik.http.routers.grafana.tls.domains[0].sans=*.${DOMAIN}"
+      - "traefik.http.routers.grafana.tls.domains[1].sans=*.${SUBDOMAIN}"
+volumes:
+  grafana_data: {}
+
+networks:
+  br1.232:
+    external: true
+    name: br1.232
+    ipam:
+      config:
+        - subnet: 10.236.232.0/24
+
+
