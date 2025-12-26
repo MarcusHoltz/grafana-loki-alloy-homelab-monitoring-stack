@@ -1,0 +1,152 @@
+// ================================================================
+// The Docker Grafana Cloud Stack: Alloy, Loki, Grafana, and Traefik
+// ================================================================
+
+// Logging configuration
+logging {
+    level  = "info"
+    format = "logfmt"
+}
+
+// Discover running Docker containers
+discovery.docker "containers" {
+    host = "unix:///var/run/docker.sock"
+}
+
+// Add proper labels to discovered containers
+discovery.relabel "containers" {
+    targets = discovery.docker.containers.targets
+
+    rule {
+        source_labels = ["__meta_docker_container_name"]
+        regex         = "/(.*)"
+        target_label  = "container"
+    }
+    rule {
+        source_labels = ["__meta_docker_container_log_stream"]
+        target_label  = "stream"
+    }
+    rule {
+        source_labels = ["__meta_docker_container_id"]
+        target_label  = "container_id"
+    }
+}
+
+// Scrape logs from Docker containers - send to BOTH cloud and local
+loki.source.docker "docker_logs" {
+    host       = "unix:///var/run/docker.sock"
+    targets    = discovery.relabel.containers.output
+    forward_to = [
+        // loki.write.grafana_cloud.receiver,  // ADD/REMOVE COMMENTS - // - to disable/enable cloud
+        loki.write.local.receiver,
+    ]
+}
+
+// Write logs to Local Loki
+// LOCAL: Logs always go here
+loki.write "local" {
+    endpoint {
+        url = "http://loki:3100/loki/api/v1/push"
+    }
+}
+
+
+//================================================================
+// LOKI CLOUD
+// Collect Loki logs and send to Grafana Cloud
+//================================================================
+// Write logs to Grafana Cloud Loki
+// COMMENT OUT THIS ENTIRE BLOCK to disable cloud logging
+// CLOUD: Comment out this block to disable cloud logging
+// loki.write "grafana_cloud" {
+//     endpoint {
+//         url = env("GCLOUD_HOSTED_LOGS_URL")
+//         basic_auth {
+//             username = env("GCLOUD_HOSTED_LOGS_ID")
+//             password = env("GCLOUD_RW_API_KEY")
+//         }
+//     }
+// }
+
+
+
+//================================================================
+// TRAEFIK ACCESS LOGS
+// Collect Traefik access logs from JSON file
+//================================================================
+
+// Discover the Traefik access log file
+local.file_match "traefik_access_logs" {
+    path_targets = [{
+        __path__ = "/var/log/access.json",
+    }]
+}
+
+// Read and parse Traefik access logs
+loki.source.file "traefik_access" {
+    targets    = local.file_match.traefik_access_logs.targets
+    forward_to = [loki.process.traefik_labels.receiver]
+}
+
+// Add labels to Traefik access logs - send raw JSON to BOTH cloud and local
+loki.process "traefik_labels" {
+    forward_to = [
+        // loki.write.grafana_cloud.receiver,  // ADD/REMOVE COMMENTS - // - to disable/enable cloud
+        loki.write.local.receiver,
+    ]
+
+        // Drop the filename label (not needed with single file)
+        stage.label_drop {
+            values = ["filename"]
+        }
+
+
+        // Just add a static label so your dashboard queries work
+        stage.static_labels {
+            values = {
+                host     = "localhost",
+                job      = "traefik",
+                log_type = "access",
+            }
+        }
+}
+
+// ================================================================
+// ALLOY SELF-MONITORING METRICS
+// ================================================================
+
+// Self-monitoring: Collect Alloy's own metrics
+prometheus.exporter.self "alloy" { }
+
+// Scrape Alloy's self-monitoring metrics
+prometheus.scrape "alloy" {
+    targets         = prometheus.exporter.self.alloy.targets
+    scrape_interval = "60s"
+    forward_to      = [
+        // prometheus.remote_write.grafana_cloud.receiver,  // ADD/REMOVE COMMENTS - // - to disable/enable cloud
+        // prometheus.remote_write.local.receiver,       // UNCOMMENT to enable local
+    ]
+}
+
+// ================================================================
+// METRICS ENDPOINTS
+// ================================================================
+
+// Write metrics to Grafana Cloud Prometheus
+// COMMENT OUT THIS ENTIRE BLOCK to disable cloud metrics
+// prometheus.remote_write "grafana_cloud" {
+//     endpoint {
+//         url = env("GCLOUD_HOSTED_METRICS_URL")
+//         basic_auth {
+//             username = env("GCLOUD_HOSTED_METRICS_ID")
+//             password = env("GCLOUD_RW_API_KEY")
+//         }
+//     }
+// }
+
+// LOCAL: Uncomment this block to send metrics to local Prometheus
+// prometheus.remote_write "local" {
+//     endpoint {
+//         url = "http://prometheus:9090/api/v1/write"
+//     }
+// }
