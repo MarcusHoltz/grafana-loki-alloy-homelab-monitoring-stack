@@ -1,0 +1,86 @@
+{
+  "apiVersion": 1,
+  "groups": [
+    {
+      "orgId": 1,
+      "name": "10s",
+      "folder": "alerts",
+      "interval": "10s",
+      "rules": [
+        {
+          "uid": "cf7i3a4c54d1ce",
+          "title": "Airsonic Playing Favorite Music",
+          "condition": "C",
+          "data": [
+            {
+              "refId": "A",
+              "queryType": "instant",
+              "relativeTimeRange": {
+                "from": 600,
+                "to": 0
+              },
+              "datasourceUid": "lokithedatasourceuid",
+              "model": {
+                "editorMode": "code",
+                "expr": "sum by (asonic_music) (\n  rate({job=\"airsonic\"} \n    | asonic_music =~ `(?i)(nickelback|creed|fred durst|Rick Astley|Limp Bizkit)`\n  [3m])\n)",
+                "instant": true,
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "queryType": "instant",
+                "refId": "A"
+              }
+            },
+            {
+              "refId": "C",
+              "relativeTimeRange": {
+                "from": 0,
+                "to": 0
+              },
+              "datasourceUid": "__expr__",
+              "model": {
+                "conditions": [
+                  {
+                    "evaluator": {
+                      "params": [
+                        0
+                      ],
+                      "type": "gt"
+                    },
+                    "operator": {
+                      "type": "and"
+                    },
+                    "query": {
+                      "params": [
+                        "C"
+                      ]
+                    },
+                    "reducer": {
+                      "params": [],
+                      "type": "last"
+                    },
+                    "type": "query"
+                  }
+                ],
+                "datasource": {
+                  "type": "__expr__",
+                  "uid": "__expr__"
+                },
+                "expression": "A",
+                "intervalMs": 1000,
+                "maxDataPoints": 43200,
+                "refId": "C",
+                "type": "threshold"
+              }
+            }
+          ],
+          "noDataState": "OK",
+          "execErrState": "Error",
+          "isPaused": false,
+          "notification_settings": {
+            "receiver": "MusicAlert_bot"
+          }
+        }
+      ]
+    }
+  ]
+}
