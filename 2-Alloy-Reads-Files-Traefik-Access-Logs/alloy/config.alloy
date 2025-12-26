@@ -1,0 +1,85 @@
+// ================================================================
+// The Docker Grafana Stack: Alloy, Loki, Grafana, and Traefik
+// ================================================================
+
+// Logging configuration
+logging {
+    level  = "info"
+    format = "logfmt"
+}
+
+// Discover running Docker containers
+discovery.docker "containers" {
+    host = "unix:///var/run/docker.sock"
+}
+
+// Add proper labels to discovered containers
+discovery.relabel "containers" {
+    targets = discovery.docker.containers.targets
+
+    rule {
+        source_labels = ["__meta_docker_container_name"]
+        regex         = "/(.*)"
+        target_label  = "container"
+    }
+    rule {
+        source_labels = ["__meta_docker_container_log_stream"]
+        target_label  = "stream"
+    }
+    rule {
+        source_labels = ["__meta_docker_container_id"]
+        target_label  = "container_id"
+    }
+}
+
+// Scrape logs from Docker containers
+loki.source.docker "docker_logs" {
+    host       = "unix:///var/run/docker.sock"
+    targets    = discovery.relabel.containers.output
+    forward_to = [loki.write.local.receiver]
+}
+
+// Write logs to Local Loki
+loki.write "local" {
+    endpoint {
+        url = "http://loki:3100/loki/api/v1/push"
+    }
+}
+
+//================================================================
+// TRAEFIK ACCESS LOGS
+// Collect Traefik access logs from JSON file
+//================================================================
+
+// Discover the Traefik access log file
+local.file_match "traefik_access_logs" {
+    path_targets = [{
+        __path__ = "/var/log/access.json",
+    }]
+}
+
+// Read and parse Traefik access logs
+loki.source.file "traefik_access" {
+    targets    = local.file_match.traefik_access_logs.targets
+    forward_to = [loki.process.traefik_labels.receiver]
+}
+
+// Add labels to Traefik access logs - send raw JSON to Loki
+loki.process "traefik_labels" {
+    forward_to = [loki.write.local.receiver]
+
+// Drop the filename label (not needed with single file)
+stage.label_drop {
+    values = ["filename"]
+}
+
+
+// Add a static label so dashboard queries work
+    stage.static_labels {
+        values = {
+            host     = "localhost",
+            job      = "traefik",
+            log_type = "access",
+        }
+    }
+}
