@@ -1,0 +1,48 @@
+// ================================================================
+// The Docker Grafana Stack: Alloy, Loki, and Grafana
+// ================================================================
+
+// Logging configuration
+logging {
+    level  = "info"
+    format = "logfmt"
+}
+
+// Discover running Docker containers
+discovery.docker "containers" {
+    host = "unix:///var/run/docker.sock"
+}
+
+// Add proper labels to discovered containers
+discovery.relabel "containers" {
+    targets = discovery.docker.containers.targets
+
+    rule {
+        source_labels = ["__meta_docker_container_name"]
+        regex         = "/(.*)"
+        target_label  = "container"
+    }
+    rule {
+        source_labels = ["__meta_docker_container_log_stream"]
+        target_label  = "stream"
+    }
+    rule {
+        source_labels = ["__meta_docker_container_id"]
+        target_label  = "container_id"
+    }
+}
+
+// Scrape logs from Docker containers
+loki.source.docker "docker_logs" {
+    host       = "unix:///var/run/docker.sock"
+    targets    = discovery.relabel.containers.output
+    forward_to = [loki.write.local.receiver]
+}
+
+// Write logs to Local Loki
+loki.write "local" {
+    endpoint {
+        url = "http://loki:3100/loki/api/v1/push"
+    }
+}
+
