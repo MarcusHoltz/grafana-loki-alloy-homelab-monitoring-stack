@@ -32,7 +32,7 @@ By the end of this guide, you'll understand what each part does.
 
 Traefik + Loki + Grafana Cloud on macvlan networking. DNS-01 ACME via Cloudflare.
 
-Configure `.env` and `traefik.yml`, create the macvlan network, then follow the incremental lab steps  →  [0-Setup-Lab-Environment](https://github.com/MarcusHoltz/grafana-loki-alloy-docker-demo/tree/main/0-Setup-Lab-Environment)
+Configure `.env` and `traefik.yml`, create the macvlan network, then follow the incremental lab steps  →  
 
 - [0-Setup-Lab-Environment](https://github.com/MarcusHoltz/grafana-loki-alloy-docker-demo/tree/main/0-Setup-Lab-Environment)
 
