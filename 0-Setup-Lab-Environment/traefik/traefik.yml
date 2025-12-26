@@ -1,0 +1,119 @@
+################################################################
+# Global Configuration
+################################################################
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+################################################################
+# Logging
+################################################################
+log:
+  level: DEBUG  # Use DEBUG for troubleshooting, INFO for production
+  # Uncomment to write logs to file
+  # filePath: /var/log/traefik.log
+
+################################################################
+# API and Dashboard
+################################################################
+api:
+  dashboard: true
+  insecure: true  # Allows dashboard on :8080 - REMOVE in production
+  # For production: comment out insecure, use HTTPS router with auth instead
+
+################################################################
+# Docker Provider
+################################################################
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    watch: true
+
+
+################################################################
+# EntryPoints
+################################################################
+entryPoints:
+  web:
+    address: ":80"
+    proxyProtocol:
+      trustedIPs:
+        - "10.236.0.0/16"
+    forwardedHeaders:
+      trustedIPs:
+        - "10.236.0.0/16"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+    transport:
+      respondingTimeouts:
+    # How long Traefik waits to READ the full request from client
+    # Allow up to 5 minutes for slow requests (protects against slowloris attacks)
+        readTimeout: 300s
+    # How long Traefik waits to WRITE the full response to client
+    # Allow up to 5 minutes for responses (prevents hung connections)
+        writeTimeout: 300s
+    # How long an idle connection can stay open without any data transfer
+    # 320s = close connection after 3 minutes of silence
+    # Prevents zombie connections while allowing WebSockets to stay alive
+        idleTimeout: 320s
+    proxyProtocol:
+      trustedIPs:
+        - "10.236.0.0/16"
+    forwardedHeaders:
+      trustedIPs:
+        - "10.236.0.0/16"
+
+################################################################
+# Servers Transport (Allow self-signed backend certificates)
+################################################################
+serversTransport:
+  insecureSkipVerify: true
+
+################################################################
+# Access Logging
+################################################################
+accessLog:
+  filePath: "/opt/access-logs/access.json"
+  format: json
+  fields:
+    defaultMode: keep
+    headers:
+      defaultMode: keep
+      names:
+        User-Agent: keep
+        Referer: keep
+        Forwarded: keep
+
+
+################################################################
+# Certificate Resolvers - Cloudflare DNS Challenge
+################################################################
+certificatesResolvers:
+  cloudflare:
+    acme:
+      email: "your_email_address@some_email_provider.com"  # CHANGE THIS to your email
+      storage: "/letsencrypt/acme.json"
+
+      # TESTING: Start with staging server to avoid rate limits
+      # caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+
+      # PRODUCTION: Once testing works, comment staging and uncomment this:
+      caServer: "https://acme-v02.api.letsencrypt.org/directory"
+
+      dnsChallenge:
+        provider: cloudflare
+        # Updated syntax - propagation instead of delayBeforeCheck
+        propagation:
+          delayBeforeChecks: 30s
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+        # Uncomment if you have DNS propagation issues
+        # disablePropagationCheck: true
