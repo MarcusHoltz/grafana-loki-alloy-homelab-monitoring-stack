@@ -3,7 +3,7 @@ contactPoints:
     - orgId: 1
       name: MusicAlert_bot
       receivers:
-        - uid: bz72fnjsy563gce
+        - uid: bz72fnjsy563gc
           type: telegram
           settings:
             bottoken: ${MYTGRAM_BOTTOKEN}
