@@ -1,0 +1,15 @@
+apiVersion: 1
+contactPoints:
+    - orgId: 1
+      name: MusicAlert_bot
+      receivers:
+        - uid: bz72fnjsy563gce
+          type: telegram
+          settings:
+            bottoken: ${MYTGRAM_BOTTOKEN}
+            chatid: >
+              ${MYTGRAM_CHATID}
+            disable_notification: false
+            disable_web_page_preview: false
+            protect_content: false
+          disableResolveMessage: true
