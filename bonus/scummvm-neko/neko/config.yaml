@@ -1,0 +1,39 @@
+capture:
+  screencast:
+    enabled: false
+
+server:
+  pprof: false
+  path_prefix: "/"
+  bind: "0.0.0.0:8080"
+  proxy: true
+  cors: [ "*" ]
+
+desktop:
+  screen: "640x480@30"
+  unminimize: true
+
+member:
+  provider: "multiuser"
+  multiuser:
+    admin_password: "admin"
+    user_password: "neko"
+
+# https://neko.m1k1o.net/docs/v3/configuration#session
+session:
+  autostart: true
+  merciful_reconnect: true
+  # IMPLICIT_HOSTING: automatically grants control to a user when they click on the screen, unless an admin has locked the controls.
+  implicit_hosting: true
+  inactive_cursors: false
+  cookie:
+    enabled: false
+
+webrtc:
+  icelite: true
+  iceservers:
+    # Backend servers are ignored if icelite is true.
+    backend:
+      - urls: [ stun:stun.l.google.com:19302 ]
+    frontend:
+      - urls: [ stun:stun.l.google.com:19305 ]
