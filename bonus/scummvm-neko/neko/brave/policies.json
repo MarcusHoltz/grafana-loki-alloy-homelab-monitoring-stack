@@ -1,0 +1,64 @@
+{
+  "AutofillAddressEnabled": false,
+  "AutofillCreditCardEnabled": false,
+  "BrowserSignin": 0,
+  "DefaultNotificationsSetting": 2,
+  "DeveloperToolsAvailability": 2,
+  "EditBookmarksEnabled": false,
+  "FullscreenAllowed": true,
+  "IncognitoModeAvailability": 1,
+  "SyncDisabled": true,
+  "AutoplayAllowed": true,
+  "BrowserAddPersonEnabled": false,
+  "BrowserGuestModeEnabled": false,
+  "DefaultPopupsSetting": 2,
+  "DownloadRestrictions": 3,
+  "VideoCaptureAllowed": false,
+  "AudioCaptureAllowed": false,
+  "AllowFileSelectionDialogs": false,
+  "PromptForDownloadLocation": false,
+  "BookmarkBarEnabled": false,
+  "PasswordManagerEnabled": false,
+  "HomepageLocation": "https://scummvm:3001",
+  "HomepageIsNewTabPage": true,
+  "ShowHomeButton": false,
+  "RestoreOnStartup": 4,
+  "RestoreOnStartupURLs": [
+    "https://scummvm:3001"
+  ],
+  "URLAllowlist": [
+    "https://scummvm:3001",
+    "file:///home/neko/Downloads"
+  ],
+  "URLBlocklist": [
+    "file://*",
+    "chrome://policy"
+  ],
+  "BraveRewardsDisabled": true,
+  "BraveNewsDisabled": true,
+  "BraveWalletDisabled": true,
+  "BraveAIChatEnabled": false,
+  "SidePanelButtonVisible": false,
+  "ExtensionInstallForcelist": [
+    "iokdoigdonjidoklkaonhielnkamibnp;https://clients2.google.com/service/update2/crx"
+  ],
+  "ExtensionInstallAllowlist": [
+    "iokdoigdonjidoklkaonhielnkamibnp"
+  ],
+  "ExtensionInstallBlocklist": [
+    "*"
+  ],
+  "DefaultSearchProviderEnabled": false,
+  "TranslateEnabled": false,
+  "SpellcheckEnabled": false,
+  "SafeBrowsingEnabled": false,
+  "ForceEphemeralProfiles": false,
+  "AllowDeletingBrowserHistory": false,
+  "ClearBrowsingDataOnExitList": [],
+  "DefaultCookiesSetting": 1,
+  "DefaultGeolocationSetting": 2,
+  "RelaunchNotification": 0,
+  "BackgroundModeEnabled": false,
+  "HardwareAccelerationModeEnabled": true,
+  "ChromeOsLockOnIdleSuspend": false
+}
