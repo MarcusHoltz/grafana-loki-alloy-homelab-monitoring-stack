@@ -104,7 +104,7 @@ services:
     container_name: neko
     hostname: neko
     restart: unless-stopped
-    # This command below lets you re-use brave profiles between containers, without the restore tabs dialog box.
+    # This command below lets you re-use brave profiles between containers, with a restore tabs dialog box.
     # It removes Brave's lock files every time the container starts, so Brave never thinks another process is using the profile.
     command: >
       sh -c "
@@ -132,9 +132,9 @@ services:
       - 'NEKO_BIND=0.0.0.0:8080'
       - 'NEKO_ICESERVERS=[{"urls": ["stun:stun.l.google.com:19302"]}]'
       - NEKO_WEBRTC_EPR=52000-52100
-      - NEKO_WEBRTC_NAT1TO1=${NEKO_WEBRTC_NAT1TO1:-192.168.15.5}
+      - NEKO_WEBRTC_NAT1TO1=${NEKO_WEBRTC_NAT1TO1:-192.168.1.100}
       # Wouldnt it be nice if this worked?
-      # - 'NEKO_BROWSER_ARGS=--no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run --disable-session-crashed-bubble --disable-infobars --kiosk'
+      - 'NEKO_BROWSER_ARGS=--no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run --disable-session-crashed-bubble --disable-infobars --kiosk'
     ports:
       - "52000-52100:52000-52100/udp"
     labels:
@@ -152,7 +152,6 @@ services:
       - './neko/config.yaml:/etc/neko/neko.yaml:rw'
       - './appdata/neko/brave:/home/neko/.config/brave'
       - './neko/brave/policies.json:/etc/brave/policies/managed/policies.json'
-
     shm_size: '2gb'
     networks:
       - br1.232
@@ -173,17 +172,22 @@ services:
       - TZ=America/Denver
       - RESTART_APP=true
       # === MATCH NEKO RESOLUTION FOR PERFORMANCE ===
+      - SELKIES_IS_MANUAL_RESOLUTION_MODE=true
+      - SELKIES_MANUAL_WIDTH=640
+      - SELKIES_MANUAL_HEIGHT=480
       - CUSTOM_WIDTH=640
       - CUSTOM_HEIGHT=480
-      - SELKIES_FRAMERATE=24
-      - SELKIES_USE_PAINT_OVER_QUALITY=true
+      - SELKIES_FRAMERATE=30
       # For x264
-      - SELKIES_H264_CRF=20
-      - SELKIES_H264_PAINTOVER_CRF=38
-      - SELKIES_H264_PAINTOVER_BURST_FRAMES=20-30
+      - SELKIES_H264_CRF=20-25
+      # Paint over is for direct stream, we're using Neko
+      - SELKIES_USE_PAINT_OVER_QUALITY=false
+      #- SELKIES_H264_PAINTOVER_CRF=10-20
+      #- SELKIES_H264_PAINTOVER_BURST_FRAMES=5
       - SELKIES_ENCODER=x264enc-striped
       - SELKIES_H264_FULLCOLOR=false
-      - SELKIES_H264_STREAMING_MODE=false
+      # Steaming mode offered a 15% CPU reduction in my tests
+      - SELKIES_H264_STREAMING_MODE=true
       # For jpeg
       #- SELKIES_ENCODER=jpeg
       #- SELKIES_JPEG_QUALITY=55
