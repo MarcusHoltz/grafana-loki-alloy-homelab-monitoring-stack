@@ -104,7 +104,7 @@ services:
     container_name: neko
     hostname: neko
     restart: unless-stopped
-    # This command below lets you re-use brave profiles between containers, with a restore tabs dialog box.
+    # This command below lets you re-use brave profiles between containers, ithout the restore tabs dialog box.
     # It removes Brave's lock files every time the container starts, so Brave never thinks another process is using the profile.
     command: >
       sh -c "
@@ -132,9 +132,9 @@ services:
       - 'NEKO_BIND=0.0.0.0:8080'
       - 'NEKO_ICESERVERS=[{"urls": ["stun:stun.l.google.com:19302"]}]'
       - NEKO_WEBRTC_EPR=52000-52100
-      - NEKO_WEBRTC_NAT1TO1=${NEKO_WEBRTC_NAT1TO1:-192.168.1.100}
+      - NEKO_WEBRTC_NAT1TO1=${NEKO_WEBRTC_NAT1TO1:-192.168.15.5}
       # Wouldnt it be nice if this worked?
-      - 'NEKO_BROWSER_ARGS=--no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run --disable-session-crashed-bubble --disable-infobars --kiosk'
+      # - 'NEKO_BROWSER_ARGS=--no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run --disable-session-crashed-bubble --disable-infobars --kiosk'
     ports:
       - "52000-52100:52000-52100/udp"
     labels:
