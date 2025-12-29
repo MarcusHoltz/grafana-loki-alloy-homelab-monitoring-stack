@@ -1,0 +1,210 @@
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    user: root
+    privileged: true
+    security_opt:
+      - no-new-privileges:true
+    env_file:
+      - .env
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+      - CF_API_EMAIL=${CF_API_EMAIL}
+    ports:
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./appdata/traefik/access-logs:/opt/access-logs"
+      - "./traefik/traefik.yml:/etc/traefik/traefik.yml:ro"
+      - "./traefik/acme.json:/letsencrypt/acme.json"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.traefik.tls.domains[0].sans=*.${DOMAIN}"
+      - "traefik.http.routers.traefik.tls.domains[1].main=${SUBDOMAIN}"
+      - "traefik.http.routers.traefik.tls.domains[1].sans=*.${SUBDOMAIN}"
+    networks:
+      - traefik-public
+      - br1.232
+
+  alloy:
+    image: grafana/alloy:latest
+    container_name: alloy
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - "./appdata/alloy:/etc/alloy/data"
+      - "./alloy:/etc/alloy"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/var/lib/docker/containers:/var/lib/docker/containers:ro"
+      - "./appdata/traefik/access-logs:/var/log:ro"
+      - "./alloy/GeoLite2-City.mmdb:/etc/alloy/GeoLite2-City.mmdb:ro"
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/etc/alloy/data
+      - /etc/alloy/config.alloy
+    depends_on:
+      - loki
+    networks:
+      - br1.232
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.alloy.loadbalancer.server.port=12345"
+      - "traefik.http.routers.alloy.rule=Host(`alloy.${DOMAIN}`) || Host(`alloy.${SUBDOMAIN}`)"
+      - "traefik.http.routers.alloy.entrypoints=websecure"
+      - "traefik.http.routers.alloy.tls=true"
+      - "traefik.http.routers.alloy.tls.certresolver=cloudflare"
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - "./appdata/loki:/loki"
+      - "./loki/config:/etc/loki"
+    networks:
+      - br1.232
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_SERVER_ROOT_URL=https://grafana.${SUBDOMAIN}
+      - GF_SERVER_DOMAIN=grafana.${SUBDOMAIN}
+    volumes:
+      - "./grafana/provisioning/:/etc/grafana/provisioning"
+      - 'grafana_data:/var/lib/grafana'
+    networks:
+      - br1.232
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`) || Host(`grafana.${SUBDOMAIN}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=cloudflare"
+
+  m1k1o:
+    image: 'ghcr.io/m1k1o/neko/brave:latest'
+    container_name: neko
+    hostname: neko
+    restart: unless-stopped
+    # This command below lets you re-use brave profiles between containers, without the restore tabs dialog box.
+    # It removes Brave's lock files every time the container starts, so Brave never thinks another process is using the profile.
+    command: >
+      sh -c "
+      rm -f /home/neko/.config/brave/SingletonLock /home/neko/.config/brave/SingletonCookie /home/neko/.config/brave/SingletonSocket &&
+      if [ -f /home/neko/.config/brave/Default/Preferences ]; then
+        sed -i 's/\"exited_cleanly\":false/\"exited_cleanly\":true/' /home/neko/.config/brave/Default/Preferences &&
+        sed -i 's/\"exit_type\":\"Crashed\"/\"exit_type\":\"Normal\"/' /home/neko/.config/brave/Default/Preferences;
+      fi &&
+      exec /usr/bin/supervisord -c /etc/neko/supervisord.conf
+      "
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    env_file:
+      - .env
+    environment:
+    # Defaults - these will be used if NOT in .env
+      - TZ=America/Denver
+      - HOST_CONTAINERNAME=neko
+      - NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD=${NEKO_MEMBER_MULTIUSER_ADMIN_PASSWORD:-admin}
+      - NEKO_MEMBER_MULTIUSER_USER_PASSWORD=${NEKO_MEMBER_MULTIUSER_USER_PASSWORD:-neko}
+      - NEKO_WEBRTC_ICELITE=1
+      - NEKO_ICELITE=true
+      - 'NEKO_BIND=0.0.0.0:8080'
+      - 'NEKO_ICESERVERS=[{"urls": ["stun:stun.l.google.com:19302"]}]'
+      - NEKO_WEBRTC_EPR=52000-52100
+      - NEKO_WEBRTC_NAT1TO1=${NEKO_WEBRTC_NAT1TO1:-192.168.15.5}
+      # Wouldnt it be nice if this worked?
+      # - 'NEKO_BROWSER_ARGS=--no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run --disable-session-crashed-bubble --disable-infobars --kiosk'
+    ports:
+      - "52000-52100:52000-52100/udp"
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.neko.loadbalancer.server.port=8080
+      - 'traefik.http.routers.neko.rule=Host(`sam.${DOMAIN}`) || Host(`neko.${SUBDOMAIN}`)'
+      - traefik.http.routers.neko.entrypoints=websecure
+      - traefik.http.routers.neko.tls=true
+      - traefik.http.routers.neko.tls.certresolver=cloudflare
+      # 1. Create the middleware (named "my-auth") (defaults: admin/admin)
+      - 'traefik.http.middlewares.my-auth.basicauth.users=${BASIC_AUTH_TRAEFIK:-admin:$$apr1$$/oco9St8$$RAp7iapWo9iKqQo/MQicG/}'
+      # 2. Attach the middleware to your neko router
+      - 'traefik.http.routers.neko.middlewares=my-auth'
+    volumes:
+      - './neko/config.yaml:/etc/neko/neko.yaml:rw'
+      - './appdata/neko/brave:/home/neko/.config/brave'
+      - './neko/brave/policies.json:/etc/brave/policies/managed/policies.json'
+
+    shm_size: '2gb'
+    networks:
+      - br1.232
+
+  scummvm:
+    image: lscr.io/linuxserver/scummvm:latest
+    container_name: scummvm
+    restart: unless-stopped
+#    ports:
+#      - "3001:3001"
+    security_opt:
+      - seccomp:unconfined
+    env_file:
+      - .env
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Denver
+      - RESTART_APP=true
+      # === MATCH NEKO RESOLUTION FOR PERFORMANCE ===
+      - CUSTOM_WIDTH=640
+      - CUSTOM_HEIGHT=480
+      - SELKIES_FRAMERATE=24
+      - SELKIES_USE_PAINT_OVER_QUALITY=true
+      # For x264
+      - SELKIES_H264_CRF=20
+      - SELKIES_H264_PAINTOVER_CRF=38
+      - SELKIES_H264_PAINTOVER_BURST_FRAMES=20-30
+      - SELKIES_ENCODER=x264enc-striped
+      - SELKIES_H264_FULLCOLOR=false
+      - SELKIES_H264_STREAMING_MODE=false
+      # For jpeg
+      #- SELKIES_ENCODER=jpeg
+      #- SELKIES_JPEG_QUALITY=55
+      - SELKIES_USE_CPU=true
+      - SELKIES_USE_BROWSER_CURSORS=false
+      - SELKIES_UI_SHOW_SIDEBAR=false
+      - SELKIES_AUDIO_BITRATE=128000
+    volumes:
+      - ./appdata/scummvm/config:/config
+      - ./appdata/scummvm/games:/config/games
+    shm_size: '2gb'
+    networks:
+      - br1.232
+
+
+volumes:
+  grafana_data:
+    driver: local
+
+networks:
+  traefik-public:
+    driver: bridge
+  br1.232:
+    driver: bridge
