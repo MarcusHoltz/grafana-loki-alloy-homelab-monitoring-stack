@@ -1,0 +1,177 @@
+{
+  "policies": {
+    "BlockAboutAddons": true,
+    "BlockAboutConfig": true,
+    "BlockAboutProfiles": true,
+    "BlockAboutSupport": true,
+    "Bookmarks": [
+      {
+        "Title": "ScummVM",
+        "URL": "https://scummvm:3001",
+        "Favicon": "https://docs.scummvm.org/en/latest/_static/scummvm.ico",
+        "Folder": "Pages",
+        "Placement": "toolbar"
+      }
+    ],
+    "CaptivePortal": false,
+    "DisableAppUpdate": true,
+    "DisableBuiltinPDFViewer": true,
+    "DisableDeveloperTools": true,
+    "DisableFeedbackCommands": true,
+    "DisableFirefoxAccounts": true,
+    "DisableFirefoxScreenshots": true,
+    "DisableFirefoxStudies": true,
+    "DisableForgetButton": true,
+    "DisableMasterPasswordCreation": true,
+    "DisablePocket": true,
+    "DisablePrivateBrowsing": true,
+    "DisableProfileImport": true,
+    "DisableProfileRefresh": true,
+    "DisableSafeMode": true,
+    "DisableSetDesktopBackground": true,
+    "DisableSystemAddonUpdate": true,
+    "DisableTelemetry": true,
+    "DisplayBookmarksToolbar": "never",
+    "DisplayMenuBar": "never",
+    "DontCheckDefaultBrowser": true,
+    "EnableTrackingProtection": {
+      "Cryptomining": true,
+      "Fingerprinting": true,
+      "Value": true
+    },
+    "ExtensionSettings": {
+      "*": {
+        "installation_mode": "blocked"
+      },
+      "uBlock0@raymondhill.net": {
+        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi",
+        "installation_mode": "force_installed"
+      }
+    },
+    "ExtensionUpdate": false,
+    "FirefoxHome": {
+      "Highlights": false,
+      "Pocket": false,
+      "Search": false,
+      "Snippets": false,
+      "TopSites": false,
+      "Locked": true
+    },
+    "HardwareAcceleration": true,
+    "Homepage": {
+      "URL": "https://scummvm:3001",
+      "Locked": true,
+      "StartPage": "homepage"
+    },
+    "NewTabPage": false,
+    "NoDefaultBookmarks": true,
+    "OfferToSaveLogins": false,
+    "OfferToSaveLoginsDefault": false,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "PasswordManagerEnabled": false,
+    "Permissions": {
+      "Camera": {
+        "BlockNewRequests": true
+      },
+      "Location": {
+        "BlockNewRequests": true
+      },
+      "Microphone": {
+        "BlockNewRequests": true
+      },
+      "Notifications": {
+        "BlockNewRequests": true
+      }
+    },
+    "Preferences": {
+      "browser.fullscreen.autohide": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "browser.sessionstore.resume_from_crash": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "browser.shell.checkDefaultBrowser": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "browser.startup.homepage": {
+        "Value": "https://scummvm:3001",
+        "Status": "locked"
+      },
+      "browser.tabs.warnOnClose": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "browser.tabs.allowTabDetach": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "browser.tabs.closeWindowWithLastTab": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "browser.urlbar.suggest.bookmark": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "browser.urlbar.suggest.history": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "browser.urlbar.suggest.openpage": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "datareporting.policy.dataSubmissionPolicyBypassNotification": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "dom.disable_window_flip": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "dom.disable_window_move_resize": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "dom.event.contextmenu.enabled": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "extensions.getAddons.showPane": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "full-screen-api.ignore-widgets": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "places.history.enabled": {
+        "Value": false,
+        "Status": "locked"
+      },
+      "privacy.file_unique_origin": {
+        "Value": true,
+        "Status": "locked"
+      },
+      "ui.key.menuAccessKeyFocuses": {
+        "Value": false,
+        "Status": "locked"
+      }
+    },
+    "PromptForDownloadLocation": false,
+    "SanitizeOnShutdown": {
+      "Cache": true,
+      "Cookies": true,
+      "Downloads": true,
+      "FormData": true,
+      "History": true,
+      "OfflineApps": true,
+      "Sessions": true,
+      "SiteSettings": true
+    }
+  }
+}
